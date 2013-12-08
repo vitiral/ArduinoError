@@ -179,7 +179,7 @@ void DBG_start_info(char *file, unsigned int line);
 void DBG_log_err(char *file, unsigned int line);
 #define log_err() DBG_log_err(__FILE__, __LINE__)
 #else
-#define log_err(...)
+#define log_err()
 #endif
 
 #else
@@ -187,6 +187,38 @@ void DBG_log_err(char *file, unsigned int line);
 #define log_info(M, ...)
 #define log_err()
 #endif
+
+
+// Using pt (protothreads) library with debug.
+// You can use the below functions OR you can define your own 
+// error handling.
+// If you do error handling, make PT_ERROR_OCCURED your last line.
+//  (returns PT_ERROR)
+
+#define PTX_TIME_INTERVAL 5000 // 5 seconds between printing same error from threads
+
+#ifdef DEBUG
+#define PTX_RAISEM(s, E, ...) derr = (E); if(millis() - PTX_time > PTX_TIME_INTERVAL){ errno=ERR_ASSERT; log_err(); \
+    Serial.println(##__VA_ARGS__);} return PT_ERROR
+#endif
+
+#define PTX_ASSERT(s, condition) if(!condition) {PTX_RAISEM(s, ERR_ASSERT);}
+
+#define PTX_INIT(s) PT_INIT(s); static unsigned int PTX_time = 0
+
+#define PTX_ERROR PT_ENDED + 1
+
+// note: set PTX_time == ms in case this is between PTX_ERROR_TRY and an error.
+#define PTX_WAIT_MS(s, ms) PTX_time = 0; PT_WAIT_UNTIL(s, millis() - PTX_time > ms); PTX_time = ms  
+
+#define PTX_ERROR_OCCURED return PT_ERROR
+
+// sets the pt location so that when it fails, it starts there again
+#define PTX_ERROR_TRY(s) PTX_time = 0; LC_SET(s)
+
+// if PT_ASSERT fails, returns. On next call continues at place last set (use PT_ERROR_TRY)
+
+#define PTX_NOERR(s) if(derr) return PT_ERROR
 
 #endif
 
