@@ -1,50 +1,27 @@
 /*
-
  LICENSE: This code is released under the GNU GPL v3 or greater. For more info see:
  <http://www.gnu.org/licenses/gpl.html>
  Copyright: Garrett Berg cloudformdesign.com garrett@cloudformdesign.com
  Loosly based on code from the fantastic "Learn C the Hard Way",  Zed A. Shaw
  http://c.learncodethehardway.org/book/ex20.html
 */ 
-// Arduino Debug Library
+// #####  Arduino Debug Library
 // This is the arduino debug library, meant to make debugging and error 
 // handling easier.
 // 
-// Intended Use:
+// ### Intended Use:
 // There are many times where you want to do error checking and simultaniously provide debugging.
-// This library helps significantly. The intended use is to make an assertion for your failure
-// point, and then in the "error:" goto define errno and derr to be what your values are.
+// This library helps significantly. Errors are automatically printed if DEBUG is defined.
+// This library offers two ways to deal with errors, documented below:
+// return checks     -- these do all your logging for you and set derr. They then return R.
+//                        these are intended for "simple use" cases, where you do not need to
+//                        do any error handling (like send special error messages, close ports,
+//                        etc)
+// goto error checks -- these do your logging, etc and then "goto error;" where you can do error
+//                        handling like closing ports, etc.
 // 
-// You then use noerr_log() to follow the stack trace down, so you can see what called what,
-// while simultaniously doing the necessary error checking.
-// 
-//   Top Level Function
-// void print_user_int(){
-// int user_int = get_user_int(); // expects to get an integer from the user
-// noerr_log();  // if there was an error, log it and go to error:
-// EH_Serial.println(user_int);
-// return;
-// error:
-// clrerr_log(); //clears error flags and logs that it did so.
-// return;
-// }
-// 
-// Output:
-// If the user puts in an int, it will simply print it back.
-// 
-// If they put in a different character, it will print out the
-// following error
-// [ERR](20 Example.ino:13)| (20:TypeErr)[char in hex]
-// [ERR](20 Example.ino:3)| (253:NoNew)
-// [ERR](0 Example.ino:7)| (0:NoErr)Cleared Error
-// 
-// The first number is derr -- the value that is checked by noerr
-// and which you should check to make sure there hasn't been an
-// error.
-// Then there is the file and line number
-// Finally, there is a verbose printout of errno (with a message
-// if one is included). Note that errno is set to ERR_NONEW 
-// after it has been printed.
+// You then use noerr_log_return() to follow the stack trace down, so you can see what called what. This
+//   helps you keep track of where your code is failing.
 // 
 // Preprossessor Definitions
 // #define DEBUG ::
@@ -61,6 +38,7 @@
 // Alternate Serial Ports:
 //   You can use a different serial port from the hardware one, through the SoftwareSerial
 //     library. Simple initilize your SoftwareSerial class and pass it to EH_config.
+//   
 //   Example:
 //      mysoft = SoftwareSerial(10, 11); // RX, TX
 //      void setup(){
@@ -68,10 +46,12 @@
 //          EH_config(mysoft);
 //          ... rest of your stuff
 //      }
+//
+//   TODO: be able to use other hardware ports.
 // 
 // Global Variables:
-// errno :: from "errno.h". Specifys error type.
-// derr  :: debug error, specifys error type. Kept separate for printing convienience
+//   errno :: specifies error type. String format is automatically printed with log_err()
+//   derr  :: main error. This is what specifies that an error occured (non-zero == error)
 // 
 // ###  Macro Overview:
 // # Logging functions:
@@ -122,6 +102,31 @@
 // clrerr_log() ::
 //   also logs
 
+#define ERR_NOERR         0 // NoErr -- no error has occured
+#define ERR_BASE          1 // BaseErr -- general error
+#define ERR_TIMEOUT       2 // TimeoutErr
+#define ERR_SERIAL        3 // SerialErr
+#define ERR_SPI           4 // Spierr
+#define ERR_I2C           5 // I2cErr
+#define ERR_COMMUNICATION 6 // ComErr
+#define ERR_CONFIG        7 // ConfigErr
+#define ERR_PIN           8 // PinErr
+#define ERR_INPUT         9 // InputErr
+
+#define ERR_TYPE          50 // TypeErr
+#define ERR_VALUE         51 // ValueErr
+#define ERR_ASSERT        52 // AssertErr
+#define ERR_TESTFAIL      53 // TestFail
+
+#define ERR_CLEARED       252 // "Cleared Error" used by clrerr_log and is then cleared
+#define ERR_NONEW         253 // NoNew -- error already printed
+#define ERR_EMPTY         254 // nothing printed, still an error
+#define ERR_UNKNOWN       255 // unknown error
+
+#define LOGV_DEBUG 50
+#define LOGV_INFO 40
+#define LOGV_ERROR 30
+
 #ifndef __errorhandling_h__
 #define __errorhandling_h__
 
@@ -130,9 +135,9 @@
 #include <inttypes.h>
 #include <Stream.h>
 
-
 #define EH_STD_SERIAL 0
 #define EH_SOFT_SERIAL 1
+
 
 class EH_Serial_class : public Stream
 {
@@ -168,31 +173,6 @@ public:
 extern EH_Serial_class EH_Serial;
 #define EH_config_std            EH_Serial.config_std()
 #define EH_config_soft(soft)     EH_Serial.config_soft(&soft)
-
-#define ERR_NOERR         0 // NoErr -- no error has occured
-#define ERR_BASE          1 // BaseErr
-#define ERR_TIMEOUT       2 // TimeoutErr
-#define ERR_SERIAL        3 // SerialErr
-#define ERR_SPI           4 // Spierr
-#define ERR_I2C           5 // I2cErr
-#define ERR_COMMUNICATION 6 // ComErr
-#define ERR_CONFIG        7 // ConfigErr
-#define ERR_PIN           8 // PinErr
-#define ERR_INPUT         9 // InputErr
-
-#define ERR_TYPE          50 // TypeErr
-#define ERR_VALUE         51 // ValueErr
-#define ERR_ASSERT        52 // AssertErr
-#define ERR_TESTFAIL      53 // TestFail
-
-#define ERR_CLEARED       252 // "Cleared Error" used by clrerr_log
-#define ERR_NONEW         253 // NoNew -- error already printed
-#define ERR_EMPTY         254  //nothing printed
-#define ERR_UNKNOWN       255  //unknown
-
-#define LOGV_DEBUG 50
-#define LOGV_INFO 40
-#define LOGV_ERROR 30
 
 void EH_test();
 extern unsigned short derr;
