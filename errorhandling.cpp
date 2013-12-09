@@ -98,6 +98,12 @@ void clrerr(){
   errmsg = DBG_EMPTY_STR;
 }
 
+void seterr(unsigned short error){
+  derr = error;
+  errno = error;
+  errmsg = DBG_EMPTY_STR;
+}
+
 void DBG_test(){
   Serial.println("Doing dbg test");
 }

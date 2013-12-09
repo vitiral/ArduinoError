@@ -126,14 +126,17 @@
 #define LOGV_INFO 40
 #define LOGV_ERROR 30
 
-void DBG_test();
+void EH_test();
 extern int derr;
 extern char *errmsg;
-extern char *DBG_CLEAR_ERROR_MSG;
+extern char *EH_CLEAR_ERROR_MSG;
 
-#define assert(A) if(!(A)) {errno=ERR_ASSERT; derr = ERR_ASSERT; print_err(); goto error;}
+void clrerr();
+void seterr();
 
-#define raise(E) errno = (E); derr = (E); print_err(); goto error;
+#define assert(A) if(!(A)) {seterr(ERR_ASSERT); print_err(); goto error;}
+
+#define raise(E) seterr(E); print_err(); goto error;
 
 #define assert_raise(A, E) if(!(A)) {raise((E))}s
 
@@ -143,13 +146,11 @@ extern char *DBG_CLEAR_ERROR_MSG;
 
 #define noerr_log() if(derr) {print_err();  goto error;}
 
-void clrerr();
-
-#define clrerr_log() clrerr(); errmsg = DBG_CLEAR_ERROR_MSG; print_err(); Serial.println();
+#define clrerr_log() clrerr(); errmsg = EH_CLEAR_ERROR_MSG; print_err(); Serial.println();
 
 #ifdef DEBUG
-void DBG_printerrno();
-void dbg_printinfo(char *file, unsigned int line);
+void EH_printerrno();
+void EH_printinfo(char *file, unsigned int line);
 
 
 #define DEBUG
@@ -160,31 +161,33 @@ void dbg_printinfo(char *file, unsigned int line);
 
 // Only log at the proper level.
 #if LOGLEVEL >= LOGV_DEBUG
-void DBG_start_debug(char *file, unsigned int line);
-#define debug(M, ...) DBG_start_debug(__FILE__, __LINE__); Serial.println((M), ##__VA_ARGS__);
+void EH_start_debug(char *file, unsigned int line);
+#define debug(M, ...) EH_start_debug(__FILE__, __LINE__); Serial.println((M), ##__VA_ARGS__);
 #else
 #define debug(M, ...) 
 #endif
 
 #if LOGLEVEL >= LOGV_INFO
-void DBG_start_info(char *file, unsigned int line);
-#define log_info(M, ...) DBG_start_info(__FILE__, __LINE__); Serial.println((M), ##__VA_ARGS__);
+void EH_start_info(char *file, unsigned int line);
+#define log_info(M, ...) EH_start_info(__FILE__, __LINE__); Serial.println((M), ##__VA_ARGS__);
 #else
 #define log_info(M, ...) 
 #endif
 
 #if LOGLEVEL >= LOGV_ERROR
-void DBG_log_err(char *file, unsigned int line);
-#define raisem(E, M, ...) errno = (E); derr = (E); DBG_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__); goto error
-#define print_err() DBG_log_err(__FILE__, __LINE__); Serial.println()
-#define log_err(M, ...) DBG_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
+void EH_log_err(char *file, unsigned int line);
+#define raisem(E, M, ...) seterr(E); EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__); goto error
+#define print_err() EH_log_err(__FILE__, __LINE__); Serial.println()
+#define log_err(M, ...) EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
 #else
+#define print_err()
 #define log_err(M, ...)
 #endif
 
 #else
 #define debug(M, ...)
 #define log_info(M, ...)
+#define print_err()
 #define log_err(M, ...)
 #endif
 
@@ -195,23 +198,19 @@ void DBG_log_err(char *file, unsigned int line);
 // If you do error handling, make PT_ERROR_OCCURED your last line.
 //  (returns PT_ERROR)
 
-#define PTX_TIME_INTERVAL 5000 // 5 seconds between printing same error from threads
-
 #ifdef DEBUG
-#define PTX_RAISEM(pt, E, ...) derr = (E); if(millis() - pt->time > PTX_TIME_INTERVAL){ \
+#define PT_RAISEM(pt, E, ...) derr = (E); if(derr != pt->error){ \
     errno=ERR_ASSERT; print_err(); Serial.println(##__VA_ARGS__);} return PT_ERROR
 #endif
 
-#define PTX_ERROR -1
-
-#define PTX_ERROR_OCCURED return PT_ERROR
+#define PT_ERROR_OCCURED return PT_ERROR
 
 // sets the pt location so that when it fails, it starts there again
-#define PTX_ERROR_TRY(pt) PTX_time = 0; LC_SET(pt)
+#define PT_ERROR_TRY(pt) PTX_time = 0; LC_SET(pt)
 
 // if PT_ASSERT fails, returns. On next call continues at place last set (use PT_ERROR_TRY)
 
-#define PTX_NOERR(pt) if(derr) return PT_ERROR
+#define PT_NOERR(pt) if(derr) return PT_ERROR
 
 #endif
 
