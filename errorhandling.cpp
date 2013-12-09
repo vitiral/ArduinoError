@@ -3,16 +3,16 @@
 #include <Serial.h>
 #include <Arduino.h>
 
-const char *DBG_GEN_END_MSG = ")| ";
-//const char DBG_GEN_ST_MSG[] = {0xA, 0xD,':', ':', 0};
-const char DBG_GEN_ST_MSG[] = ":: ";
-char *DBG_CLEAR_ERROR_MSG = "Cleared Error";
-char *DBG_EMPTY_STR = "";
+const char *EH_GEN_END_MSG = ")| ";
+//const char EH_GEN_ST_MSG[] = {0xA, 0xD,':', ':', 0};
+const char EH_GEN_ST_MSG[] = ":: ";
+char *EH_CLEAR_ERROR_MSG = "Cleared Error";
+char *EH_EMPTY_STR = "";
 
-char *errmsg = DBG_EMPTY_STR;
+char *errmsg = EH_EMPTY_STR;
 int derr = 0;
 
-void dbg_printinfo(char *file, unsigned int line)
+void EH_printinfo(char *file, unsigned int line)
 {
   Serial.print(derr); 
   Serial.write(' '); 
@@ -22,7 +22,7 @@ void dbg_printinfo(char *file, unsigned int line)
 }
 
 
-void DBG_printerrno(){
+void EH_printerrno(){
   Serial.write('(');
   Serial.print(errno);
   Serial.write(':');
@@ -59,7 +59,7 @@ void DBG_printerrno(){
   case 253:
     Serial.print(F("NoNew")); break;
   case 254:
-    Serial.print(DBG_EMPTY_STR); break;
+    Serial.print(EH_EMPTY_STR); break;
   case 255:
   default:
     Serial.print(F("UnknownErr:")); break;
@@ -68,43 +68,43 @@ void DBG_printerrno(){
   Serial.print(errmsg);
 }
 
-void DBG_start_debug(char *file, unsigned int line){
-  Serial.print(DBG_GEN_ST_MSG);
+void EH_start_debug(char *file, unsigned int line){
+  Serial.print(EH_GEN_ST_MSG);
   Serial.print(F("DBG: (")); 
-  dbg_printinfo(file, line); 
-  Serial.print(DBG_GEN_END_MSG);
+  EH_printinfo(file, line); 
+  Serial.print(EH_GEN_END_MSG);
 }
 
-void DBG_start_info(char *file, unsigned int line){
-  Serial.print(DBG_GEN_ST_MSG);
+void EH_start_info(char *file, unsigned int line){
+  Serial.print(EH_GEN_ST_MSG);
   Serial.print(F("INFO: ("));
-  dbg_printinfo(file, line);
-  Serial.print(DBG_GEN_END_MSG);
+  EH_printinfo(file, line);
+  Serial.print(EH_GEN_END_MSG);
 }
 
-void DBG_log_err(char *file, unsigned int line){
-  Serial.print(DBG_GEN_ST_MSG);
+void EH_log_err(char *file, unsigned int line){
+  Serial.print(EH_GEN_ST_MSG);
   Serial.print(F("[ERR](")); 
-  dbg_printinfo(file, line);
-  Serial.print(DBG_GEN_END_MSG); 
-  DBG_printerrno();
+  EH_printinfo(file, line);
+  Serial.print(EH_GEN_END_MSG); 
+  EH_printerrno();
   if(errno) errno = ERR_NONEW;
-  errmsg = DBG_EMPTY_STR;
+  errmsg = EH_EMPTY_STR;
 }
 
 void clrerr(){
   derr = 0; 
   errno = 0; 
-  errmsg = DBG_EMPTY_STR;
+  errmsg = EH_EMPTY_STR;
 }
 
 void seterr(unsigned short error){
   derr = error;
   errno = error;
-  errmsg = DBG_EMPTY_STR;
+  errmsg = EH_EMPTY_STR;
 }
 
-void DBG_test(){
+void EH_test(){
   Serial.println("Doing dbg test");
 }
 
