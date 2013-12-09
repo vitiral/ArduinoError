@@ -191,8 +191,10 @@ void seterr(unsigned short error);
 #define assert_raisem_return(A, E, M, ...)  if(!(A)) {EH_ST_raisem(E, M, ##__VA_ARGS__);}  iferr_return 
 
 
+//#define iferr_return        if(derr) return 
+//#define iferr_log_return    if(derr) {print_err();}  iferr_return
 #define iferr_return        if(derr) return 
-#define iferr_log_return    if(derr) {print_err();}  iferr_return
+#define iferr_log_return(...)    if(derr) {print_err(); return __VA_ARGS__;}
 #define iferr_catch()       if(derr) goto error
 #define iferr_log_catch()   if(derr) {print_err(); goto error;}
 
