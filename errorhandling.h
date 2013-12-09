@@ -96,13 +96,14 @@
 // clrerr_log() ::
 //   also logs
 
-#ifndef __debug_h__
-#define __debug_h__
+#ifndef __errorhandling_h__
+#define __errorhandling_h__
 
+#include <SoftwareSerial.h>
 #include <string.h>
 #include <inttypes.h>
 #include <Stream.h>
-#include <SoftwareSerial.h>
+
 
 #define EH_STD_SERIAL 0
 #define EH_SOFT_SERIAL 1
@@ -176,27 +177,26 @@ extern char *EH_CLEAR_ERROR_MSG;
 void clrerr();
 void seterr(unsigned short error);
 
-#define raise(E)                            seterr(E); print_err(); goto error
-#define raisem(E, M, ...)                   EH_ST_raisem(E, M, ##__VA_ARGS__); goto error
-#define assert(A)                           if(!(A)) {seterr(ERR_ASSERT); print_err(); goto error;}
-#define assert_raise(A, E)                  if(!(A)) {raise((E));}
-#define assert_raisem(A, E, M, ...)         if(!(A)) {raisem((E), (M), ##__VA_ARGS__);}
+#define EH_DW(code) do{code}while(0) //wraps in a do while(0) so that the syntax is correct.
 
+#define raise(E, ...)                       EH_DW(EH_ST_raisem(E, __VA_ARGS__); goto error;)
+#define assert(A)                           EH_DW(if(!(A)) {seterr(ERR_ASSERT); log_err(); goto error;})
+#define assert_raise(A, E, ...)             EH_DW(if(!(A)) {raise((E), __VA_ARGS__);})
 
 // These functions make the error label unnecessary
-#define raise_return(E)                     seterr(E); print_err(); return
-#define raisem_return(E, M, ...)            EH_ST_raisem(E, M, ##__VA_ARGS__); return
-#define assert_return(A)                    if(!(A)) {seterr(ERR_ASSERT); print_err();}  iferr_return
-#define assert_raise_return(A, E)           if(!A){seterr(E); print_err();} iferr_return 
-#define assert_raisem_return(A, E, M, ...)  if(!(A)) {EH_ST_raisem(E, M, ##__VA_ARGS__);}  iferr_return 
+#define raise_return(E, ...)                    EH_DW(seterr(E); log_err(); return __VA_ARGS__;)
+#define raisem_return(E, M, ...)                EH_DW(EH_ST_raisem(E, M); return __VA_ARGS__;)
+#define assert_return(A, ...)                   EH_DW(if(!(A)) {seterr(ERR_ASSERT); log_err(); return __VA_ARGS__;})
+#define assert_raise_return(A, E, ...)          EH_DW(if(!A){seterr(E); log_err(); return __VA_ARGS__;})
+#define assert_raisem_return(A, E, M, ...)      EH_DW(if(!(A)) {EH_ST_raisem(E, M); return __VA_ARGS__;})
 
 
 //#define iferr_return        if(derr) return 
-//#define iferr_log_return    if(derr) {print_err();}  iferr_return
-#define iferr_return        if(derr) return 
-#define iferr_log_return(...)    if(derr) {print_err(); return __VA_ARGS__;}
-#define iferr_catch()       if(derr) goto error
-#define iferr_log_catch()   if(derr) {print_err(); goto error;}
+//#define iferr_log_return    if(derr) {log_err();}  iferr_return
+#define iferr_return(...)        EH_DW(if(derr) return __VA_ARGS__;)
+#define iferr_log_return(...)    EH_DW(if(derr) {log_err(); return __VA_ARGS__;})
+#define iferr_catch()            EH_DW(if(derr) goto error;)
+#define iferr_log_catch()        EH_DW(if(derr) {log_err(); goto error;})
 
 #ifdef LOGLEVEL
 #define DEBUG
@@ -214,40 +214,38 @@ void EH_printinfo(char *file, unsigned int line);
 // Only log at the proper level.
 #if LOGLEVEL >= LOGV_DEBUG
 void EH_start_debug(char *file, unsigned int line);
-#define debug(M, ...) EH_start_debug(__FILE__, __LINE__); EH_Serial.println((M), ##__VA_ARGS__);
+#define debug(M, ...) EH_DW(EH_start_debug(__FILE__, __LINE__); EH_Serial.println((M), ##__VA_ARGS__);)
 #else
 #define debug(M, ...) 
 #endif
 
 #if LOGLEVEL >= LOGV_INFO
 void EH_start_info(char *file, unsigned int line);
-#define log_info(M, ...) EH_start_info(__FILE__, __LINE__); EH_Serial.println((M), ##__VA_ARGS__);
+#define log_info(M, ...) EH_DW(EH_start_info(__FILE__, __LINE__); EH_Serial.println((M), ##__VA_ARGS__);)
 #else
 #define log_info(M, ...) 
 #endif
 
 #if LOGLEVEL >= LOGV_ERROR
   void EH_log_err(char *file, unsigned int line);
-  #define EH_ST_raisem(E, M, ...) seterr(E); EH_log_err(__FILE__, __LINE__); EH_Serial.println(M, ##__VA_ARGS__)
-  #define print_err() EH_log_err(__FILE__, __LINE__); EH_Serial.println()
-  #define log_err(M, ...) EH_log_err(__FILE__, __LINE__); EH_Serial.println(M, ##__VA_ARGS__)
-  #define clrerr_log() seterr(ERR_CLEARED); print_err(); clrerr()
+  #define EH_ST_raisem(E, ...) seterr(E); EH_log_err(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__)
+  #define log_err(...) EH_DW(EH_log_err(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);)
+  #define clrerr_log() EH_DW(seterr(ERR_CLEARED); log_err(); clrerr();)
 
 #else
-  #define EH_ST_raisem(E, M, ...)
-  #define print_err()
-  #define log_err(M, ...)
+  #define EH_ST_raisem(E, ...)
+  #define log_err(...)
   #define clrerr_log() clrerr()
 #endif
 
 #else
+
 #define debug(M, ...)
 #define log_info(M, ...)
-#define print_err()
-#define log_err(M, ...)
+#define log_err(...)
 #define clrerr_log() clrerr()
+#define EH_ST_raisem(E, ...)
 #endif
-
 
 // Using pt (protothreads) library with debug.
 // You can use the below functions OR you can define your own 
@@ -256,7 +254,7 @@ void EH_start_info(char *file, unsigned int line);
 //  (returns PT_ERROR)
 
 #ifdef DEBUG
-#define PT_RAISE(pt, E) derr = (E); if(derr != pt->error){ errno=ERR_ASSERT; print_err(); EH_Serial.println();} return PT_ERROR
+#define PT_RAISE(pt, E) derr = (E); if(derr != pt->error){ errno=ERR_ASSERT; log_err(); EH_Serial.println();} return PT_ERROR
 #endif
 
 #define PT_ERROR_OCCURED return PT_ERROR

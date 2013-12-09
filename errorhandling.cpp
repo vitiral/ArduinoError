@@ -32,7 +32,7 @@ void EH_Serial_class::config_soft(SoftwareSerial *soft){
 }
 
 int EH_Serial_class::peek(){
-  assert_return(0) -1;
+  assert_return(0, -1);
 }
 
 size_t EH_Serial_class::write(uint8_t byte){
@@ -48,11 +48,11 @@ size_t EH_Serial_class::write(uint8_t byte){
 }
 
 int EH_Serial_class::read(){
-  assert_return(0) -1;
+  assert_return(0, -1);
 }
 
 int EH_Serial_class::available(){
-  assert_return(0) -1;
+  assert_return(0, -1);
 }
 
 void EH_Serial_class::flush(){
