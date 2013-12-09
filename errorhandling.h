@@ -49,47 +49,73 @@
 // Preprossessor Definitions
 // #define DEBUG ::
 //   define DEBUG before importing this module to print things, otherwise error checking, etc will be silent.
-// 
+//   if DEBUG is defined and LOGLEVEL is not, LOGLEVEL == 50
+// #defien LOGLEVEL ::
+//   LOGLEVEL is various values up to 50. If loglevel is defined, DEBUG is automatically defined.
+//   if LOGLEVEL is...
+//      >= 50       all messages printed (debug, info, error)
+//      <50         debug not printed
+//      <40         info not printed
+//      <30         nothing is printed
+//
+// Alternate Serial Ports:
+//   You can use a different serial port from the hardware one, through the SoftwareSerial
+//     library. Simple initilize your SoftwareSerial class and pass it to EH_config.
+//   Example:
+//      mysoft = SoftwareSerial(10, 11); // RX, TX
+//      void setup(){
+//          mysoft.begin(57600);        //57600 is the recommended speed because the library can delay other code
+//          EH_config(mysoft);
+//          ... rest of your stuff
+//      }
 // 
 // Global Variables:
 // errno :: from "errno.h". Specifys error type.
 // derr  :: debug error, specifys error type. Kept separate for printing convienience
 // 
-// Macro Overview:
-// Logging functions
-// debug(M, ...) ::
-//   prints out: [DBG](derr file:line)|M
-// log_info(M, ...) ::
-//   prints out: [INFO](derr file:line)|M
-// log_err(M, ...) ::
-//   prints out [ERR](derr file:line)|(strerrno:errno)M
-//   Note automatically called by all below functions except noerr and clrerr...
+// ###  Macro Overview:
+// # Logging functions:
+// debug(...) ::
+//   prints out: [DBG](derr file:line)|...
+// log_info(...) ::
+//   prints out: [INFO](derr file:line)|...
+// log_err(...) ::
+//   prints out [ERR](derr file:line)|(strerrno:errno)|...
+//   Note automatically called by all below functions except noerr and clrerr
 //
+// # Error handling Functions:
 // assert(A) ::
 //   Assert that the value is true. If it is not true, then derr and errno = ERR_ASSERT
 //   Also logs error with message "AS"
 //   Note: requires "error:" defined for goto
 //
-// raise(E) ::
+// raise(E, ...) ::
 //   Raises the error given, logging it.
+//   Also can print a message
 //   Note: requires "error:" defined for goto
 // 
-// assert_raise(A, E) ::
+// assert_raise(A, E, ...) ::
 //   if A is false, raise(E)
+//   Also can print a message
 //   Note: requires "error:" defined for goto
 // 
-// assert_raisem(A, E, M, ...) ::
-//   if A is false, raise(E) then print message (like EH_Serial.print)
+// iferr_catch() ::
+//   if there is an error, "goto error"
+//   Note: requires "error:" defined for goto
+//
+// iferr_log_catch() ::
+//   same as above, but also logs error.
 //   Note: requires "error:" defined for goto
 // 
-// noerr() ::
-//   same as assert(!derr)
-//   Note: requires "error:" defined for goto
-// 
-// noerr_log() ::
-//   same as noerr() but provides a log as well with message "NE"
-//   Note: requires "error:" defined for goto
-// 
+// [fun]_return(..., return_val) ::
+//   The above functions have a "return" variety, where they return the return_val
+//   instead of "goto error"
+//   They are: assert_return(A, R)  raise_return(E, R)  assert_raise_return(A, E, R)  
+//             raisem_return(E, M, R) /*where M is a message*/ 
+//             assert_raisem_return(A, E, M, R)
+//             iferr_return(R)  iferr_log_return(R)
+//   note: in void functions, R should not be included (i.e. assert_return(A))
+//
 // clrerr() ::
 //   clears error specifiers (derr = 0; errno = 0)
 // 
