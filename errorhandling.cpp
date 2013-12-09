@@ -1,7 +1,6 @@
 
-#include "errorhandling.h"
-#include <Serial.h>
 #include <Arduino.h>
+#include "errorhandling.h"
 
 const char *EH_GEN_END_MSG = ")| ";
 //const char EH_GEN_ST_MSG[] = {0xA, 0xD,':', ':', 0};
@@ -12,85 +11,142 @@ char *errmsg = EH_EMPTY_STR;
 unsigned short derr = 0;
 unsigned short errno = 0;
 
-void EH_printinfo(char *file, unsigned int line)
+EH_Serial_class::EH_Serial_class()
 {
-  Serial.print(derr); 
-  Serial.write(' '); 
-  Serial.print(file); 
-  Serial.write(':'); 
-  Serial.print(line);
+  _mode = EH_STD_SERIAL;
+  _soft = 0;
 }
 
+EH_Serial_class::~EH_Serial_class()
+{
+}
+
+void EH_Serial_class::config_std(){
+  _mode = EH_STD_SERIAL;
+}
+
+// I can't get this working
+void EH_Serial_class::config_soft(SoftwareSerial *soft){
+  _mode = EH_SOFT_SERIAL;
+  _soft = soft;
+}
+
+int EH_Serial_class::peek(){
+  assert_return(0) -1;
+}
+
+size_t EH_Serial_class::write(uint8_t byte){
+  switch(_mode){
+  case EH_STD_SERIAL:
+    return Serial.write(byte);
+  case EH_SOFT_SERIAL:
+    return _soft->write(byte);
+  default:
+    return 0;
+  }
+  return 0;
+}
+
+int EH_Serial_class::read(){
+  assert_return(0) -1;
+}
+
+int EH_Serial_class::available(){
+  assert_return(0) -1;
+}
+
+void EH_Serial_class::flush(){
+  switch(_mode){
+  case EH_STD_SERIAL:
+    return Serial.flush();
+  case EH_SOFT_SERIAL:
+    return _soft->flush();
+  default:
+    assert_return(0);
+  }
+  assert_return(0);
+}
+
+EH_Serial_class EH_Serial;
+
+void EH_printinfo(char *file, unsigned int line)
+{
+  EH_Serial.print(derr); 
+  EH_Serial.write(' '); 
+  EH_Serial.print(file); 
+  EH_Serial.write(':'); 
+  EH_Serial.print(line);
+}
 
 void EH_printerrno(){
-  Serial.write('(');
-  Serial.print(errno);
-  Serial.write(':');
+  EH_Serial.write('(');
+  EH_Serial.print(errno);
+  EH_Serial.write(':');
   
   switch(errno){
   case 0:
-    Serial.print(F("NoErr")); break;
+    EH_Serial.print(F("NoErr")); break;
   case 1:
-    Serial.print(F("BaseErr")); break;
+    EH_Serial.print(F("BaseErr")); break;
   case 2:
-    Serial.print(F("TimeoutErr")); break;
+    EH_Serial.print(F("TimeoutErr")); break;
   case 3:
-    Serial.print(F("SerialErr")); break;
+    EH_Serial.print(F("SerialErr")); break;
   case 4:
-    Serial.print(F("SpiErr")); break;
+    EH_Serial.print(F("SpiErr")); break;
   case 5:
-    Serial.print(F("I2cErr")); break;
+    EH_Serial.print(F("I2cErr")); break;
   case 6:
-    Serial.print(F("ComErr")); break;
+    EH_Serial.print(F("ComErr")); break;
   case 7:
-    Serial.print(F("ConfigErr")); break;
+    EH_Serial.print(F("ConfigErr")); break;
   case 8:
-    Serial.print(F("PinErr")); break;
+    EH_Serial.print(F("PinErr")); break;
   case 9:
-    Serial.print(F("InputErr")); break;
+    EH_Serial.print(F("InputErr")); break;
   
   case 50:
-    Serial.print(F("TypeErr")); break;
+    EH_Serial.print(F("TypeErr")); break;
   case 51:
-    Serial.print(F("ValueErr")); break;
+    EH_Serial.print(F("ValueErr")); break;
   case 52:
-    Serial.print(F("AssertErr")); break;
+    EH_Serial.print(F("AssertErr")); break;
   case 53:
-    Serial.print(F("TestFail")); break;
+    EH_Serial.print(F("TestFail")); break;
   
   case 252:;
-    Serial.print(F("Cleared Error")); break;
+    EH_Serial.print(F("Cleared Error")); break;
   case 253:
-    Serial.print(F("NoNew")); break;
+    EH_Serial.print(F("NoNew")); break;
   case 254:
-    Serial.print(EH_EMPTY_STR); break;
+    EH_Serial.print(EH_EMPTY_STR); break;
   case 255:
   default:
-    Serial.print(F("UnknownErr:")); break;
+    EH_Serial.print(F("UnknownErr:")); break;
   }
-  Serial.write(')');
-  Serial.print(errmsg);
+  EH_Serial.write(')');
+  EH_Serial.print(errmsg);
 }
 
 void EH_start_debug(char *file, unsigned int line){
-  Serial.print(EH_GEN_ST_MSG);
-  Serial.print(F("DBG: (")); 
+  EH_Serial.print(EH_GEN_ST_MSG);
+  EH_Serial.print(F("DBG: (")); 
   EH_printinfo(file, line); 
-  Serial.print(EH_GEN_END_MSG);
+  EH_Serial.print(EH_GEN_END_MSG);
 }
 
 void EH_start_info(char *file, unsigned int line){
-  Serial.print(EH_GEN_ST_MSG);
-  Serial.print(F("INFO: ("));
+  EH_Serial.print(EH_GEN_ST_MSG);
+  EH_Serial.print(F("INFO: ("));
   EH_printinfo(file, line);
-  Serial.print(EH_GEN_END_MSG);
+  EH_Serial.print(EH_GEN_END_MSG);
 }
 
 void EH_log_err(char *file, unsigned int line){
-  Serial.print(EH_GEN_ST_MSG);
-  Serial.print(F("[ERR](")); 
+  EH_Serial.print(EH_GEN_ST_MSG);
+  EH_Serial.print(F("[ERR](")); 
   EH_printinfo(file, line);
-  Serial.print(EH_GEN_END_MSG); 
+  EH_Serial.print(EH_GEN_END_MSG); 
   EH_printerrno();
   if(errno) errno = ERR_NONEW;
   errmsg = EH_EMPTY_STR;
@@ -109,6 +165,6 @@ void seterr(unsigned short error){
 }
 
 void EH_test(){
-  Serial.println("Doing dbg test");
+  EH_Serial.println("Doing dbg test");
 }
 

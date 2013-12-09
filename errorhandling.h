@@ -22,7 +22,7 @@
 // void print_user_int(){
 // int user_int = get_user_int(); // expects to get an integer from the user
 // noerr_log();  // if there was an error, log it and go to error:
-// Serial.println(user_int);
+// EH_Serial.println(user_int);
 // return;
 // error:
 // clrerr_log(); //clears error flags and logs that it did so.
@@ -79,7 +79,7 @@
 //   Note: requires "error:" defined for goto
 // 
 // assert_raisem(A, E, M, ...) ::
-//   if A is false, raise(E) then print message (like Serial.print)
+//   if A is false, raise(E) then print message (like EH_Serial.print)
 //   Note: requires "error:" defined for goto
 // 
 // noerr() ::
@@ -96,13 +96,51 @@
 // clrerr_log() ::
 //   also logs
 
-
-
-
 #ifndef __debug_h__
 #define __debug_h__
 
 #include <string.h>
+#include <inttypes.h>
+#include <Stream.h>
+#include <SoftwareSerial.h>
+
+#define EH_STD_SERIAL 0
+#define EH_SOFT_SERIAL 1
+
+class EH_Serial_class : public Stream
+{
+private:
+  // per object data
+  uint8_t _mode;
+  SoftwareSerial *_soft;
+ 
+public:
+  // public methods
+  EH_Serial_class();
+  //EH_Serial_class(uint8_t receivePin, uint8_t transmitPin, bool inverse_logic = false);
+  ~EH_Serial_class();
+//  void begin(long speed);
+//  bool listen();
+//  void end();
+//  bool isListening() { return this == active_object; }
+//  bool overflow() { bool ret = _buffer_overflow; _buffer_overflow = false; return ret; }
+//  bool overflow();
+
+  void config_std();
+  void config_soft(SoftwareSerial *soft);
+  int peek();
+  virtual size_t write(uint8_t byte);
+  virtual int read();
+  virtual int available();
+  virtual void flush();
+  
+  using Print::write;
+};
+
+
+extern EH_Serial_class EH_Serial;
+#define EH_config_std            EH_Serial.config_std()
+#define EH_config_soft(soft)     EH_Serial.config_soft(&soft)
 
 #define ERR_NOERR         0 // NoErr -- no error has occured
 #define ERR_BASE          1 // BaseErr
@@ -163,6 +201,7 @@ void seterr(unsigned short error);
 #endif
 
 #ifdef DEBUG
+#define DEBUG
 void EH_printerrno();
 void EH_printinfo(char *file, unsigned int line);
 
@@ -173,23 +212,23 @@ void EH_printinfo(char *file, unsigned int line);
 // Only log at the proper level.
 #if LOGLEVEL >= LOGV_DEBUG
 void EH_start_debug(char *file, unsigned int line);
-#define debug(M, ...) EH_start_debug(__FILE__, __LINE__); Serial.println((M), ##__VA_ARGS__);
+#define debug(M, ...) EH_start_debug(__FILE__, __LINE__); EH_Serial.println((M), ##__VA_ARGS__);
 #else
 #define debug(M, ...) 
 #endif
 
 #if LOGLEVEL >= LOGV_INFO
 void EH_start_info(char *file, unsigned int line);
-#define log_info(M, ...) EH_start_info(__FILE__, __LINE__); Serial.println((M), ##__VA_ARGS__);
+#define log_info(M, ...) EH_start_info(__FILE__, __LINE__); EH_Serial.println((M), ##__VA_ARGS__);
 #else
 #define log_info(M, ...) 
 #endif
 
 #if LOGLEVEL >= LOGV_ERROR
   void EH_log_err(char *file, unsigned int line);
-  #define EH_ST_raisem(E, M, ...) seterr(E); EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
-  #define print_err() EH_log_err(__FILE__, __LINE__); Serial.println()
-  #define log_err(M, ...) EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
+  #define EH_ST_raisem(E, M, ...) seterr(E); EH_log_err(__FILE__, __LINE__); EH_Serial.println(M, ##__VA_ARGS__)
+  #define print_err() EH_log_err(__FILE__, __LINE__); EH_Serial.println()
+  #define log_err(M, ...) EH_log_err(__FILE__, __LINE__); EH_Serial.println(M, ##__VA_ARGS__)
   #define clrerr_log() seterr(ERR_CLEARED); print_err(); clrerr()
 
 #else
@@ -215,7 +254,7 @@ void EH_start_info(char *file, unsigned int line);
 //  (returns PT_ERROR)
 
 #ifdef DEBUG
-#define PT_RAISE(pt, E) derr = (E); if(derr != pt->error){ errno=ERR_ASSERT; print_err(); Serial.println();} return PT_ERROR
+#define PT_RAISE(pt, E) derr = (E); if(derr != pt->error){ errno=ERR_ASSERT; print_err(); EH_Serial.println();} return PT_ERROR
 #endif
 
 #define PT_ERROR_OCCURED return PT_ERROR
