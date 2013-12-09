@@ -214,16 +214,16 @@ void EH_printinfo(char *file, unsigned int line);
 // Only log at the proper level.
 #if LOGLEVEL >= LOGV_DEBUG
 void EH_start_debug(char *file, unsigned int line);
-#define debug(M, ...) EH_DW(EH_start_debug(__FILE__, __LINE__); EH_Serial.println((M), ##__VA_ARGS__);)
+#define debug(...) EH_DW(EH_start_debug(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);)
 #else
-#define debug(M, ...) 
+#define debug(...) 
 #endif
 
 #if LOGLEVEL >= LOGV_INFO
 void EH_start_info(char *file, unsigned int line);
-#define log_info(M, ...) EH_DW(EH_start_info(__FILE__, __LINE__); EH_Serial.println((M), ##__VA_ARGS__);)
+#define log_info(...) EH_DW(EH_start_info(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);)
 #else
-#define log_info(M, ...) 
+#define log_info(...) 
 #endif
 
 #if LOGLEVEL >= LOGV_ERROR
@@ -240,8 +240,8 @@ void EH_start_info(char *file, unsigned int line);
 
 #else
 
-#define debug(M, ...)
-#define log_info(M, ...)
+#define debug(...)
+#define log_info(...)
 #define log_err(...)
 #define clrerr_log() clrerr()
 #define EH_ST_raisem(E, ...)
