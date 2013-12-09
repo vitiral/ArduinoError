@@ -9,8 +9,8 @@ const char EH_GEN_ST_MSG[] = ":: ";
 char *EH_EMPTY_STR = "";
 
 char *errmsg = EH_EMPTY_STR;
-int derr = 0;
-int errno = 0;
+unsigned short derr = 0;
+unsigned short errno = 0;
 
 void EH_printinfo(char *file, unsigned int line)
 {
@@ -55,6 +55,8 @@ void EH_printerrno(){
     Serial.print(F("ValueErr")); break;
   case 52:
     Serial.print(F("AssertErr")); break;
+  case 53:
+    Serial.print(F("TestFail")); break;
   
   case 252:;
     Serial.print(F("Cleared Error")); break;
@@ -100,7 +102,7 @@ void clrerr(){
   errmsg = EH_EMPTY_STR;
 }
 
-void seterr(int error){
+void seterr(unsigned short error){
   derr = error;
   errno = error;
   errmsg = EH_EMPTY_STR;

@@ -97,6 +97,8 @@
 //   also logs
 
 
+
+
 #ifndef __debug_h__
 #define __debug_h__
 
@@ -116,6 +118,7 @@
 #define ERR_TYPE          50 // TypeErr
 #define ERR_VALUE         51 // ValueErr
 #define ERR_ASSERT        52 // AssertErr
+#define ERR_TESTFAIL      53 // TestFail
 
 #define ERR_CLEARED       252 // "Cleared Error" used by clrerr_log
 #define ERR_NONEW         253 // NoNew -- error already printed
@@ -127,26 +130,28 @@
 #define LOGV_ERROR 30
 
 void EH_test();
-extern int derr;
-extern int errno;
+extern unsigned short derr;
+extern unsigned short errno;
 extern char *errmsg;
 extern char *EH_CLEAR_ERROR_MSG;
 
 void clrerr();
-void seterr(int error);
+void seterr(unsigned short error);
 
 #define raise(E)                            seterr(E); print_err(); goto error
 #define raisem(E, M, ...)                   EH_ST_raisem(E, M, ##__VA_ARGS__); goto error
 #define assert(A)                           if(!(A)) {seterr(ERR_ASSERT); print_err(); goto error;}
-#define assert_raise(A, E)                  if(!(A)) {raise((E))}
+#define assert_raise(A, E)                  if(!(A)) {raise((E));}
 #define assert_raisem(A, E, M, ...)         if(!(A)) {raisem((E), (M), ##__VA_ARGS__);}
 
+
 // These functions make the error label unnecessary
-#define raise_return                        seterr(E); print_err(); return
-#define raisem_return                       EH_ST_raisem(E, M, ##__VA_ARGS__); return
+#define raise_return(E)                     seterr(E); print_err(); return
+#define raisem_return(E, M, ...)            EH_ST_raisem(E, M, ##__VA_ARGS__); return
 #define assert_return(A)                    if(!(A)) {seterr(ERR_ASSERT); print_err();}  iferr_return
 #define assert_raise_return(A, E)           if(!A){seterr(E); print_err();} iferr_return 
 #define assert_raisem_return(A, E, M, ...)  if(!(A)) {EH_ST_raisem(E, M, ##__VA_ARGS__);}  iferr_return 
+
 
 #define iferr_return        if(derr) return 
 #define iferr_log_return    if(derr) {print_err();}  iferr_return
@@ -210,8 +215,7 @@ void EH_start_info(char *file, unsigned int line);
 //  (returns PT_ERROR)
 
 #ifdef DEBUG
-#define PT_RAISEM(pt, E, ...) derr = (E); if(derr != pt->error){ \
-    errno=ERR_ASSERT; print_err(); Serial.println(##__VA_ARGS__);} return PT_ERROR
+#define PT_RAISE(pt, E) derr = (E); if(derr != pt->error){ errno=ERR_ASSERT; print_err(); Serial.println();} return PT_ERROR
 #endif
 
 #define PT_ERROR_OCCURED return PT_ERROR
