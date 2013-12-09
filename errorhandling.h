@@ -132,29 +132,34 @@ extern char *errmsg;
 extern char *EH_CLEAR_ERROR_MSG;
 
 void clrerr();
-void seterr();
+void seterr(int error);
 
-#define assert(A) if(!(A)) {seterr(ERR_ASSERT); print_err(); goto error;}
+#define raise(E)                            seterr(E); print_err(); goto error
+#define raisem(E, M, ...)                   EH_ST_raisem(E, M, ##__VA_ARGS__); goto error
+#define assert(A)                           if(!(A)) {seterr(ERR_ASSERT); print_err(); goto error;}
+#define assert_raise(A, E)                  if(!(A)) {raise((E))}
+#define assert_raisem(A, E, M, ...)         if(!(A)) {raisem((E), (M), ##__VA_ARGS__);}
 
-#define raise(E) seterr(E); print_err(); goto error;
+// These functions make the error label unnecessary
+#define raise_return                        seterr(E); print_err(); return
+#define raisem_return                       EH_ST_raisem(E, M, ##__VA_ARGS__); return
+#define assert_return(A)                    if(!(A)) {seterr(ERR_ASSERT); print_err();}  iferr_return
+#define assert_raise_return(A, E)           if(!A){seterr(E); print_err();} iferr_return 
+#define assert_raisem_return(A, E, M, ...)  if(!(A)) {EH_ST_raisem(E, M, ##__VA_ARGS__);}  iferr_return 
 
-#define assert_raise(A, E) if(!(A)) {raise((E))}s
+#define iferr_return        if(derr) return 
+#define iferr_log_return    if(derr) {print_err();}  iferr_return
+#define iferr_catch()       if(derr) goto error
+#define iferr_log_catch()   if(derr) {print_err(); goto error;}
 
-#define assert_raisem(A, E, M, ...) if(!(A)) {raisem((E), (M), ##__VA_ARGS__)}
-
-#define noerr() if(derr) goto error;
-
-#define noerr_log() if(derr) {print_err();  goto error;}
-
-#define clrerr_log() clrerr(); errmsg = EH_CLEAR_ERROR_MSG; print_err(); Serial.println();
+#ifdef LOGLEVEL
+#define DEBUG
+#endif
 
 #ifdef DEBUG
 void EH_printerrno();
 void EH_printinfo(char *file, unsigned int line);
 
-
-#define DEBUG
-//set log level to debug if programmer didn't set it.
 #ifndef LOGLEVEL
 #define LOGLEVEL LOGV_DEBUG
 #endif
@@ -175,13 +180,17 @@ void EH_start_info(char *file, unsigned int line);
 #endif
 
 #if LOGLEVEL >= LOGV_ERROR
-void EH_log_err(char *file, unsigned int line);
-#define raisem(E, M, ...) seterr(E); EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__); goto error
-#define print_err() EH_log_err(__FILE__, __LINE__); Serial.println()
-#define log_err(M, ...) EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
+  void EH_log_err(char *file, unsigned int line);
+  #define EH_ST_raisem(E, M, ...) seterr(E); EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
+  #define print_err() EH_log_err(__FILE__, __LINE__); Serial.println()
+  #define log_err(M, ...) EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
+  #define clrerr_log() clrerr(); errmsg = EH_CLEAR_ERROR_MSG; print_err()
+
 #else
-#define print_err()
-#define log_err(M, ...)
+  #define EH_ST_raisem(E, M, ...)
+  #define print_err()
+  #define log_err(M, ...)
+  #define clrerr_log() clrerr()
 #endif
 
 #else
@@ -189,6 +198,7 @@ void EH_log_err(char *file, unsigned int line);
 #define log_info(M, ...)
 #define print_err()
 #define log_err(M, ...)
+#define clrerr_log() clrerr()
 #endif
 
 

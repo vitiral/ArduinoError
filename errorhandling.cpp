@@ -98,7 +98,7 @@ void clrerr(){
   errmsg = EH_EMPTY_STR;
 }
 
-void seterr(unsigned short error){
+void seterr(int error){
   derr = error;
   errno = error;
   errmsg = EH_EMPTY_STR;
