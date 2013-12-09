@@ -131,23 +131,21 @@ extern int derr;
 extern char *errmsg;
 extern char *DBG_CLEAR_ERROR_MSG;
 
-#define assert(A) if(!(A)) {errno=ERR_ASSERT; derr = ERR_ASSERT; log_err(); Serial.println(); goto error;}
+#define assert(A) if(!(A)) {errno=ERR_ASSERT; derr = ERR_ASSERT; print_err(); goto error;}
 
-#define raise(E) errno = (E); derr = (E); log_err(); Serial.println(); goto error;
+#define raise(E) errno = (E); derr = (E); print_err(); goto error;
 
-#define assert_raise(A, E) if(!(A)) {raise((E))}
-
-#define raisem(E, M, ...) errno = (E); derr = (E); log_err(); Serial.println((M), ##__VA_ARGS__); goto error;
+#define assert_raise(A, E) if(!(A)) {raise((E))}s
 
 #define assert_raisem(A, E, M, ...) if(!(A)) {raisem((E), (M), ##__VA_ARGS__)}
 
 #define noerr() if(derr) goto error;
 
-#define noerr_log() if(derr) {log_err(); Serial.println(); goto error;}
+#define noerr_log() if(derr) {print_err();  goto error;}
 
 void clrerr();
 
-#define clrerr_log() clrerr(); errmsg = DBG_CLEAR_ERROR_MSG; log_err(); Serial.println();
+#define clrerr_log() clrerr(); errmsg = DBG_CLEAR_ERROR_MSG; print_err(); Serial.println();
 
 #ifdef DEBUG
 void DBG_printerrno();
@@ -177,15 +175,17 @@ void DBG_start_info(char *file, unsigned int line);
 
 #if LOGLEVEL >= LOGV_ERROR
 void DBG_log_err(char *file, unsigned int line);
-#define log_err() DBG_log_err(__FILE__, __LINE__)
+#define raisem(E, M, ...) errno = (E); derr = (E); DBG_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__); goto error
+#define print_err() DBG_log_err(__FILE__, __LINE__); Serial.println()
+#define log_err(M, ...) DBG_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
 #else
-#define log_err()
+#define log_err(M, ...)
 #endif
 
 #else
 #define debug(M, ...)
 #define log_info(M, ...)
-#define log_err()
+#define log_err(M, ...)
 #endif
 
 
@@ -198,27 +198,20 @@ void DBG_log_err(char *file, unsigned int line);
 #define PTX_TIME_INTERVAL 5000 // 5 seconds between printing same error from threads
 
 #ifdef DEBUG
-#define PTX_RAISEM(s, E, ...) derr = (E); if(millis() - PTX_time > PTX_TIME_INTERVAL){ errno=ERR_ASSERT; log_err(); \
-    Serial.println(##__VA_ARGS__);} return PT_ERROR
+#define PTX_RAISEM(pt, E, ...) derr = (E); if(millis() - pt->time > PTX_TIME_INTERVAL){ \
+    errno=ERR_ASSERT; print_err(); Serial.println(##__VA_ARGS__);} return PT_ERROR
 #endif
 
-#define PTX_ASSERT(s, condition) if(!condition) {PTX_RAISEM(s, ERR_ASSERT);}
-
-#define PTX_INIT(s) PT_INIT(s); static unsigned int PTX_time = 0
-
-#define PTX_ERROR PT_ENDED + 1
-
-// note: set PTX_time == ms in case this is between PTX_ERROR_TRY and an error.
-#define PTX_WAIT_MS(s, ms) PTX_time = 0; PT_WAIT_UNTIL(s, millis() - PTX_time > ms); PTX_time = ms  
+#define PTX_ERROR -1
 
 #define PTX_ERROR_OCCURED return PT_ERROR
 
 // sets the pt location so that when it fails, it starts there again
-#define PTX_ERROR_TRY(s) PTX_time = 0; LC_SET(s)
+#define PTX_ERROR_TRY(pt) PTX_time = 0; LC_SET(pt)
 
 // if PT_ASSERT fails, returns. On next call continues at place last set (use PT_ERROR_TRY)
 
-#define PTX_NOERR(s) if(derr) return PT_ERROR
+#define PTX_NOERR(pt) if(derr) return PT_ERROR
 
 #endif
 
