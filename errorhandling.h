@@ -100,7 +100,6 @@
 #ifndef __debug_h__
 #define __debug_h__
 
-#include <errno.h>
 #include <string.h>
 
 #define ERR_NOERR         0 // NoErr -- no error has occured
@@ -114,10 +113,11 @@
 #define ERR_PIN           8 // PinErr
 #define ERR_INPUT         9 // InputErr
 
-#define ERR_TYPE          20 // TypeErr
-#define ERR_VALUE         21 // ValueErr
-#define ERR_ASSERT        22 // AssertErr
+#define ERR_TYPE          50 // TypeErr
+#define ERR_VALUE         51 // ValueErr
+#define ERR_ASSERT        52 // AssertErr
 
+#define ERR_CLEARED       252 // "Cleared Error" used by clrerr_log
 #define ERR_NONEW         253 // NoNew -- error already printed
 #define ERR_EMPTY         254  //nothing printed
 #define ERR_UNKNOWN       255  //unknown
@@ -128,6 +128,7 @@
 
 void EH_test();
 extern int derr;
+extern int errno;
 extern char *errmsg;
 extern char *EH_CLEAR_ERROR_MSG;
 
@@ -184,7 +185,7 @@ void EH_start_info(char *file, unsigned int line);
   #define EH_ST_raisem(E, M, ...) seterr(E); EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
   #define print_err() EH_log_err(__FILE__, __LINE__); Serial.println()
   #define log_err(M, ...) EH_log_err(__FILE__, __LINE__); Serial.println(M, ##__VA_ARGS__)
-  #define clrerr_log() clrerr(); errmsg = EH_CLEAR_ERROR_MSG; print_err()
+  #define clrerr_log() seterr(ERR_CLEARED); print_err(); clrerr()
 
 #else
   #define EH_ST_raisem(E, M, ...)

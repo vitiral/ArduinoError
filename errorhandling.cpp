@@ -6,11 +6,11 @@
 const char *EH_GEN_END_MSG = ")| ";
 //const char EH_GEN_ST_MSG[] = {0xA, 0xD,':', ':', 0};
 const char EH_GEN_ST_MSG[] = ":: ";
-char *EH_CLEAR_ERROR_MSG = "Cleared Error";
 char *EH_EMPTY_STR = "";
 
 char *errmsg = EH_EMPTY_STR;
 int derr = 0;
+int errno = 0;
 
 void EH_printinfo(char *file, unsigned int line)
 {
@@ -49,13 +49,15 @@ void EH_printerrno(){
   case 9:
     Serial.print(F("InputErr")); break;
   
-  case 20:
+  case 50:
     Serial.print(F("TypeErr")); break;
-  case 21:
+  case 51:
     Serial.print(F("ValueErr")); break;
-  case 22:
+  case 52:
     Serial.print(F("AssertErr")); break;
   
+  case 252:;
+    Serial.print(F("Cleared Error")); break;
   case 253:
     Serial.print(F("NoNew")); break;
   case 254:
