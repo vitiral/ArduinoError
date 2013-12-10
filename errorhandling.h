@@ -129,6 +129,7 @@
 #define LOGV_DEBUG 50
 #define LOGV_INFO 40
 #define LOGV_ERROR 30
+#define LOGV_SILENT 0
 
 #ifndef __errorhandling_h__
 #define __errorhandling_h__
@@ -140,7 +141,6 @@
 
 #define EH_STD_SERIAL 0
 #define EH_SOFT_SERIAL 1
-
 
 class EH_Serial_class : public Stream
 {
@@ -172,19 +172,18 @@ public:
   using Print::write;
 };
 
-
 extern EH_Serial_class EH_Serial;
 #define EH_config_std            EH_Serial.config_std()
 #define EH_config_soft(soft)     EH_Serial.config_soft(&soft)
 
 void EH_test();
-extern unsigned short derr;
-extern unsigned short errno;
+extern uint8_t derr;
+extern uint8_t errno;
 extern char *errmsg;
 extern char *EH_CLEAR_ERROR_MSG;
 
 void clrerr();
-void seterr(unsigned short error);
+void seterr(uint8_t error);
 
 #define EH_DW(code) do{code}while(0) //wraps in a do while(0) so that the syntax is correct.
 
@@ -207,54 +206,49 @@ void seterr(unsigned short error);
 #define iferr_catch()            EH_DW(if(derr) goto error;)
 #define iferr_log_catch()        EH_DW(if(derr) {log_err(); goto error;})
 
-#ifdef LOGLEVEL
-#define DEBUG
+#ifdef DEBUG
+  #ifndef LOGLEVEL
+  #define LOGLEVEL LOGV_DEBUG
+  #endif
 #endif
 
-#ifdef DEBUG
-#define DEBUG
-void EH_printerrno();
-void EH_printinfo(char *file, unsigned int line);
-
-#ifndef LOGLEVEL
-#define LOGLEVEL LOGV_DEBUG
+#ifdef LOGLEVEL
+  #if LOGLEVEL >= LOGV_ERROR
+  extern uint8_t loglevel;
+  #define set_loglevel(LL) loglevel = LL
+  #define EH_IFLL(LL,code) if(loglevel >= LL){code} 
+  void EH_printerrno();
+  void EH_printinfo(char *file, unsigned int line);
+  #endif
 #endif
 
 // Only log at the proper level.
 #if LOGLEVEL >= LOGV_DEBUG
 void EH_start_debug(char *file, unsigned int line);
-#define debug(...) EH_DW(EH_start_debug(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);)
+#define debug(...) EH_DW(EH_IFLL(LOGV_DEBUG, EH_start_debug(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
 #else
 #define debug(...) 
 #endif
 
 #if LOGLEVEL >= LOGV_INFO
 void EH_start_info(char *file, unsigned int line);
-#define log_info(...) EH_DW(EH_start_info(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);)
+#define log_info(...) EH_DW(EH_IFLL(LOGV_INFO, EH_start_info(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
 #else
 #define log_info(...) 
 #endif
 
 #if LOGLEVEL >= LOGV_ERROR
   void EH_log_err(char *file, unsigned int line);
-  #define EH_ST_raisem(E, ...) seterr(E); EH_log_err(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__)
-  #define log_err(...) EH_DW(EH_log_err(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);)
-  #define clrerr_log() EH_DW(seterr(ERR_CLEARED); log_err(); clrerr();)
+  #define EH_ST_raisem(E, ...) seterr(E); EH_DW(EH_IFLL(LOGV_ERROR, EH_log_err(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
+  #define log_err(...)              EH_DW(EH_IFLL(LOGV_ERROR, EH_log_err(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
+  #define clrerr_log()              EH_DW(EH_IFLL(LOGV_ERROR, seterr(ERR_CLEARED); log_err(); clrerr();))
 
 #else
-  #define EH_ST_raisem(E, ...)
+  #define EH_ST_raisem(E, ...) seterr(E)
   #define log_err(...)
   #define clrerr_log() clrerr()
 #endif
 
-#else
-
-#define debug(...)
-#define log_info(...)
-#define log_err(...)
-#define clrerr_log() clrerr()
-#define EH_ST_raisem(E, ...)
-#endif
 
 // Using pt (protothreads) library with debug.
 // You can use the below functions OR you can define your own 
@@ -262,9 +256,9 @@ void EH_start_info(char *file, unsigned int line);
 // If you do error handling, make PT_ERROR_OCCURED your last line.
 //  (returns PT_ERROR)
 
-#ifdef DEBUG
+#ifdef DEBUG000
 #define PT_RAISE(pt, E) derr = (E); if(derr != pt->error){ errno=ERR_ASSERT; log_err(); EH_Serial.println();} return PT_ERROR
-#endif
+
 
 #define PT_ERROR_OCCURED return PT_ERROR
 
@@ -274,7 +268,7 @@ void EH_start_info(char *file, unsigned int line);
 // if PT_ASSERT fails, returns. On next call continues at place last set (use PT_ERROR_TRY)
 
 #define PT_NOERR(pt) if(derr) return PT_ERROR
-
+#endif
 #endif
 
 

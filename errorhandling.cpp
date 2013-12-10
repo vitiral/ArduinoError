@@ -1,5 +1,6 @@
 
 #include <Arduino.h>
+#include <SoftwareSerial.h>
 #include "errorhandling.h"
 
 const char *EH_GEN_END_MSG = ")| ";
@@ -8,8 +9,9 @@ const char EH_GEN_ST_MSG[] = ":: ";
 char *EH_EMPTY_STR = "";
 
 char *errmsg = EH_EMPTY_STR;
-unsigned short derr = 0;
-unsigned short errno = 0;
+uint8_t derr = 0;
+uint8_t errno = 0;
+uint8_t loglevel = 50;
 
 EH_Serial_class::EH_Serial_class()
 {
@@ -158,7 +160,7 @@ void clrerr(){
   errmsg = EH_EMPTY_STR;
 }
 
-void seterr(unsigned short error){
+void seterr(uint8_t error){
   derr = error;
   errno = error;
   errmsg = EH_EMPTY_STR;
