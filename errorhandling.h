@@ -13,10 +13,13 @@
 // There are many times where you want to do error checking and simultaniously provide debugging.
 // This library helps significantly. Errors are automatically printed if DEBUG is defined.
 // This library offers two ways to deal with errors, documented below:
-// return checks     -- these do all your logging for you and set derr. They then return R.
+// return checks     -- these do all your logging for you and set derr. (the global error variable).
+//                        They then return R.
 //                        these are intended for "simple use" cases, where you do not need to
 //                        do any error handling (like send special error messages, close ports,
 //                        etc)
+// goto error checks -- these do your logging, etc and then "goto error;" where you can do error
+//                        handling like closing ports, etc.
 // goto error checks -- these do your logging, etc and then "goto error;" where you can do error
 //                        handling like closing ports, etc.
 // 
