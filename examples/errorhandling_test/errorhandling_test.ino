@@ -39,7 +39,7 @@ void do_failure2(){
   clrerr(); // function after this should be expecting derr to exist
 }
 
-#define T1_TESTS 21
+#define T1_TESTS 22
 unsigned short test1(unsigned short tp){
   short tofail = false;
   short tobreak = true;
@@ -142,6 +142,7 @@ unsigned short test1(unsigned short tp){
     assert(derr);
     break;
   case 21:
+    // Testing syntax
     tobreak = true;
     // testing syntax
     seterr(ERR_VALUE);
@@ -154,12 +155,49 @@ unsigned short test1(unsigned short tp){
     if(false) assert_raise_return(false, ERR_VALUE, 1);
     if(false) assert_raisem_return(false, ERR_VALUE, "Should not see", 1);
     break;
+  case 22:
+    // Testing log level printing
+    tobreak = true;
+    
+    EH_Serial.println(":: You shouldn't see anything...");
+    set_loglevel(LOGV_SILENT);
+    debug("debug");
+    log_info("info");
+    log_err("error");
+    EH_ST_raisem(ERR_UNKNOWN);
+    clrerr_log();
+    
+    EH_Serial.println(":: Now only errors");
+    set_loglevel(LOGV_ERROR);
+    debug("debug");
+    log_info("info");
+    log_err("error");
+    EH_ST_raisem(ERR_UNKNOWN);
+    clrerr_log();
+    
+    EH_Serial.println(":: errors + info");
+    set_loglevel(LOGV_INFO);
+    debug("debug");
+    log_info("info");
+    log_err("error");
+    EH_ST_raisem(ERR_UNKNOWN);
+    clrerr_log();
+    
+    EH_Serial.println(":: should see all 3");
+    set_loglevel(LOGV_DEBUG);
+    debug("debug");
+    log_info("info");
+    log_err("error");
+    EH_ST_raisem(ERR_UNKNOWN);
+    clrerr_log();
+    
+    break;
   default:
     return 0;
   }
   if(tobreak) return 0;
   else return 1;
-  
+
 error:
   if(tofail){
     return 0;
@@ -178,7 +216,7 @@ void loop(){
     EH_Serial.flush();
     EH_Serial.print("Testcase:");
     EH_Serial.println(n);
-    
+
     clrerr();
     out = test1(n);
     if(out){
@@ -190,18 +228,19 @@ void loop(){
       EH_Serial.println("*** Success ***");
     }
   }
-  
+
   EH_Serial.println("##### Tests Done #####");
   EH_Serial.println(String("Results: ") + String(failures) + String(" failures out of: ") + String(T1_TESTS));
   if(failbuffer.getSize()) {
     EH_Serial.println(String("Failed cases:"));
   }
-  
+
   while(failbuffer.getSize() > 0){
     EH_Serial.print((unsigned short)failbuffer.get());
     EH_Serial.print(", ");
   } 
   while(true);
 }
+
 
 

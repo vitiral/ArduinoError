@@ -132,14 +132,14 @@ void EH_printerrno(){
 
 void EH_start_debug(char *file, unsigned int line){
   EH_Serial.print(EH_GEN_ST_MSG);
-  EH_Serial.print(F("DBG: (")); 
+  EH_Serial.print(F("[DBG]: (")); 
   EH_printinfo(file, line); 
   EH_Serial.print(EH_GEN_END_MSG);
 }
 
 void EH_start_info(char *file, unsigned int line){
   EH_Serial.print(EH_GEN_ST_MSG);
-  EH_Serial.print(F("INFO: ("));
+  EH_Serial.print(F("[INFO]: ("));
   EH_printinfo(file, line);
   EH_Serial.print(EH_GEN_END_MSG);
 }

@@ -215,26 +215,25 @@ void seterr(uint8_t error);
 #ifdef LOGLEVEL
   #if LOGLEVEL >= LOGV_ERROR
   extern uint8_t loglevel;
-  #define set_loglevel(LL) loglevel = LL
   #define EH_IFLL(LL,code) if(loglevel >= LL){code} 
-  void EH_printerrno();
-  void EH_printinfo(char *file, unsigned int line);
   #endif
+#else
+  #define LOGLEVEL LOGV_SILENT
 #endif
 
 // Only log at the proper level.
 #if LOGLEVEL >= LOGV_DEBUG
-void EH_start_debug(char *file, unsigned int line);
-#define debug(...) EH_DW(EH_IFLL(LOGV_DEBUG, EH_start_debug(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
+  void EH_start_debug(char *file, unsigned int line);
+  #define debug(...) EH_DW(EH_IFLL(LOGV_DEBUG, EH_start_debug(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
 #else
-#define debug(...) 
+  #define debug(...) 
 #endif
 
 #if LOGLEVEL >= LOGV_INFO
 void EH_start_info(char *file, unsigned int line);
-#define log_info(...) EH_DW(EH_IFLL(LOGV_INFO, EH_start_info(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
+  #define log_info(...) EH_DW(EH_IFLL(LOGV_INFO, EH_start_info(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
 #else
-#define log_info(...) 
+  #define log_info(...) 
 #endif
 
 #if LOGLEVEL >= LOGV_ERROR
@@ -242,11 +241,14 @@ void EH_start_info(char *file, unsigned int line);
   #define EH_ST_raisem(E, ...) seterr(E); EH_DW(EH_IFLL(LOGV_ERROR, EH_log_err(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
   #define log_err(...)              EH_DW(EH_IFLL(LOGV_ERROR, EH_log_err(__FILE__, __LINE__); EH_Serial.println(__VA_ARGS__);))
   #define clrerr_log()              EH_DW(EH_IFLL(LOGV_ERROR, seterr(ERR_CLEARED); log_err(); clrerr();))
-
+  void EH_printerrno();
+  void EH_printinfo(char *file, unsigned int line);
+  #define set_loglevel(LL) loglevel = LL
 #else
   #define EH_ST_raisem(E, ...) seterr(E)
   #define log_err(...)
   #define clrerr_log() clrerr()
+  #define set_loglevel(LL)
 #endif
 
 
